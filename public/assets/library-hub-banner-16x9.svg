@@ -1,0 +1,79 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900" width="1600" height="900" role="img" aria-label="Library Hub 16:9 Official Banner">
+  <defs>
+    <linearGradient id="lhBg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#052E1E"/>
+      <stop offset="52%" stop-color="#08422B"/>
+      <stop offset="100%" stop-color="#0B1914"/>
+    </linearGradient>
+    <radialGradient id="lhGlow1" cx="78%" cy="24%" r="55%">
+      <stop offset="0%" stop-color="#00A870" stop-opacity="0.34"/>
+      <stop offset="100%" stop-color="#00A870" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="lhGlow2" cx="20%" cy="85%" r="50%">
+      <stop offset="0%" stop-color="#C99E3A" stop-opacity="0.22"/>
+      <stop offset="100%" stop-color="#C99E3A" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="goldLine" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#C99E3A" stop-opacity="0"/>
+      <stop offset="50%" stop-color="#E5BC5E" stop-opacity="0.9"/>
+      <stop offset="100%" stop-color="#C99E3A" stop-opacity="0"/>
+    </linearGradient>
+    <pattern id="subtleGrid" width="60" height="60" patternUnits="userSpaceOnUse">
+      <path d="M 60 0 L 0 0 0 60" fill="none" stroke="rgba(232,245,238,0.05)" stroke-width="1"/>
+    </pattern>
+  </defs>
+
+  <rect width="1600" height="900" fill="url(#lhBg)"/>
+  <rect width="1600" height="900" fill="url(#subtleGrid)"/>
+  <rect width="1600" height="900" fill="url(#lhGlow1)"/>
+  <rect width="1600" height="900" fill="url(#lhGlow2)"/>
+
+  <!-- Outer editorial frame -->
+  <rect x="44" y="44" width="1512" height="812" rx="28" fill="none" stroke="rgba(232,245,238,0.14)" stroke-width="2"/>
+
+  <!-- Left geometric emblem -->
+  <g transform="translate(150, 225)">
+    <rect x="0" y="0" width="210" height="210" rx="44" fill="rgba(255,255,255,0.06)" stroke="rgba(201,158,58,0.45)" stroke-width="2.5"/>
+    <path d="M52 62 C78 52 98 62 105 74 L105 154 C96 142 76 135 52 142 Z" fill="#00B87D"/>
+    <path d="M158 62 C132 52 112 62 105 74 L105 154 C114 142 134 135 158 142 Z" fill="#C99E3A"/>
+    <circle cx="105" cy="48" r="10" fill="#F4D37C"/>
+  </g>
+
+  <!-- Main Brand Headline -->
+  <text x="410" y="295" fill="#C99E3A" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="24" font-weight="700" letter-spacing="8">
+    STUDY HALLS &amp; READING LIBRARIES
+  </text>
+
+  <text x="410" y="405" fill="#F5FAF7" font-family="Georgia, 'Times New Roman', serif" font-size="108" font-weight="700" letter-spacing="1.5">
+    Library Hub
+  </text>
+
+  <text x="410" y="480" fill="rgba(238,246,242,0.82)" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="34" font-weight="500">
+    Dedicated Websites, Student Seat Cards, Fee Reminders &amp; Private Storage
+  </text>
+
+  <rect x="410" y="535" width="760" height="3" fill="url(#goldLine)"/>
+
+  <!-- Clean capability tiles (no pills) -->
+  <g transform="translate(410, 580)" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif">
+    <rect x="0" y="0" width="290" height="96" rx="14" fill="rgba(255,255,255,0.05)" stroke="rgba(232,245,238,0.14)"/>
+    <text x="22" y="38" fill="#00D48F" font-size="18" font-weight="700">CUSTOM PORTAL</text>
+    <text x="22" y="68" fill="#E5EFE9" font-size="21" font-weight="600">Own Link &amp; Branding</text>
+
+    <rect x="315" y="0" width="290" height="96" rx="14" fill="rgba(255,255,255,0.05)" stroke="rgba(232,245,238,0.14)"/>
+    <text x="337" y="38" fill="#E5BC5E" font-size="18" font-weight="700">STUDENT DESK</text>
+    <text x="337" y="68" fill="#E5EFE9" font-size="21" font-weight="600">Seats, Fees &amp; Notices</text>
+
+    <rect x="630" y="0" width="320" height="96" rx="14" fill="rgba(255,255,255,0.05)" stroke="rgba(232,245,238,0.14)"/>
+    <text x="652" y="38" fill="#00D48F" font-size="18" font-weight="700">1-CLICK REMINDERS</text>
+    <text x="652" y="68" fill="#E5EFE9" font-size="21" font-weight="600">WhatsApp &amp; Auto Email</text>
+  </g>
+
+  <!-- Subtle right architectural accent -->
+  <g opacity="0.16" stroke="#E5EFE9" fill="none" stroke-width="2">
+    <rect x="1320" y="130" width="160" height="220" rx="16"/>
+    <rect x="1350" y="170" width="100" height="14" rx="4" fill="#00D48F" stroke="none"/>
+    <rect x="1350" y="205" width="76" height="10" rx="4" fill="#E5EFE9" stroke="none"/>
+    <rect x="1350" y="232" width="90" height="10" rx="4" fill="#E5EFE9" stroke="none"/>
+  </g>
+</svg>

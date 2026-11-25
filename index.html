@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="en" class="light">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Library Hub — Private Study Library Websites &amp; Portal</title>
+    <meta
+      name="description"
+      content="Library Hub builds dedicated, private websites for modern study libraries with custom domains, student seat passes, fee tracking, and WhatsApp reminders."
+    />
+    <meta
+      name="keywords"
+      content="Library Hub, study library software, reading room website, library seat management, student fee tracker, private library portal"
+    />
+    <meta name="theme-color" content="#008B5E" />
+    <meta name="robots" content="index, follow" />
+    <link rel="canonical" href="https://libraryhub.dpdns.org/" />
+    <script>
+      (function () {
+        try {
+          var mode = window.localStorage.getItem('lh_appearance_mode');
+          var root = document.documentElement;
+          root.classList.remove('light', 'dark');
+          root.classList.add(mode === 'dark' ? 'dark' : 'light');
+
+          var p = window.location.pathname.replace(/\/+$/, '') || '/';
+          var hex = '';
+          if (p === '/' || p === '/superadmin') {
+            hex = window.localStorage.getItem('lh_platform_theme') || '';
+          } else {
+            var seg = p.slice(1).split('/')[0] || '';
+            if (seg) hex = window.localStorage.getItem('lh_library_theme_' + seg.toLowerCase()) || '';
+          }
+          if (!/^#[0-9a-fA-F]{6}$/.test(hex) || hex.toUpperCase() === '#D4A359') {
+            hex = '#008B5E';
+          }
+          var h = hex.slice(1);
+          var r = parseInt(h.slice(0, 2), 16);
+          var g = parseInt(h.slice(2, 4), 16);
+          var b = parseInt(h.slice(4, 6), 16);
+          root.style.setProperty('--accent', hex.toUpperCase());
+          root.style.setProperty('--accent-rgb', r + ', ' + g + ', ' + b);
+          var lum = (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255;
+          root.style.setProperty('--accent-contrast', lum > 0.62 ? '#083E2B' : '#FFFFFF');
+          var meta = document.querySelector('meta[name="theme-color"]');
+          if (meta) meta.setAttribute('content', hex.toUpperCase());
+        } catch (e) {}
+      })();
+    </script>
+
+    <!-- Official Library Hub Favicons & App Icons -->
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="192x192"
+      href="/assets/aistudio/library-hub-icon-color-2048_19a73f2a.png"
+    />
+    <link
+      rel="apple-touch-icon"
+      sizes="180x180"
+      href="/assets/aistudio/library-hub-color-2048_10d8fac8.png"
+    />
+
+    <!-- OpenGraph Social Card -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Library Hub" />
+    <meta property="og:title" content="Library Hub — Private Study Library Websites &amp; Portal" />
+    <meta
+      property="og:description"
+      content="Dedicated private websites for study libraries with student seat passes, fee tracking, custom themes, and 1-click personal database storage."
+    />
+    <meta property="og:url" content="https://libraryhub.dpdns.org/" />
+    <meta
+      property="og:image"
+      content="https://libraryhub.dpdns.org/assets/aistudio/library-hub-reversed-2048_36d29f85.png"
+    />
+    <meta property="og:image:alt" content="Library Hub Brand Mark" />
+
+    <!-- Twitter / X Social Card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Library Hub — Private Study Library Websites &amp; Portal" />
+    <meta
+      name="twitter:description"
+      content="Dedicated private websites for study libraries with student seat passes, fee tracking, and WhatsApp reminders."
+    />
+    <meta
+      name="twitter:image"
+      content="https://libraryhub.dpdns.org/assets/aistudio/library-hub-reversed-2048_36d29f85.png"
+    />
+
+    <!-- Schema.org Structured Data for Google Search Logo & Site Name -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@graph": [
+          {
+            "@type": "Organization",
+            "@id": "https://libraryhub.dpdns.org/#organization",
+            "name": "Library Hub",
+            "alternateName": "LIBRARY HUB",
+            "url": "https://libraryhub.dpdns.org/",
+            "logo": {
+              "@type": "ImageObject",
+              "url": "https://libraryhub.dpdns.org/favicon.svg",
+              "width": 512,
+              "height": 512
+            },
+            "image": "https://libraryhub.dpdns.org/assets/aistudio/library-hub-color-2048_10d8fac8.png"
+          },
+          {
+            "@type": "WebSite",
+            "@id": "https://libraryhub.dpdns.org/#website",
+            "url": "https://libraryhub.dpdns.org/",
+            "name": "Library Hub",
+            "alternateName": "LIBRARY HUB",
+            "publisher": {
+              "@id": "https://libraryhub.dpdns.org/#organization"
+            }
+          },
+          {
+            "@type": "WebApplication",
+            "name": "Library Hub",
+            "url": "https://libraryhub.dpdns.org/",
+            "applicationCategory": "BusinessApplication",
+            "operatingSystem": "All",
+            "description": "Multi-tenant study library website and management platform with isolated tenant portals, student seat passes, fee cycle tracking, and WhatsApp reminders."
+          }
+        ]
+      }
+    </script>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Anton&family=Cormorant+Garamond:wght@600;700&family=Manrope:wght@400;500;600;700&family=Playfair+Display:wght@600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body class="bg-canvas text-parchment antialiased selection:bg-[#008B5E]/25 selection:text-parchment">
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

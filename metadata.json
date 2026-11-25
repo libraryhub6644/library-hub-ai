@@ -1,0 +1,6 @@
+{
+  "name": "Library Hub",
+  "description": "Multi-tenant study library website and management platform with isolated tenant portals, member dashboards, fee cycle tracking, WhatsApp click-to-chat reminders, and Google sign-in.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

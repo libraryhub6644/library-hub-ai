@@ -1,0 +1,557 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Global default-deny safety net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Health check document for startup getDocFromServer test
+    match /test/connection {
+      allow get: if true;
+    }
+
+    // Core helper primitives
+    function incoming() { return request.resource.data; }
+    function existing() { return resource.data; }
+    function isSignedIn() {
+      return request.auth != null
+        && request.auth.token.email_verified == true
+        && request.auth.token.email is string;
+    }
+    function userEmail() {
+      return request.auth.token.email.lower();
+    }
+    function isSuperAdmin() {
+      return isSignedIn() && userEmail() == 'jangidcuts@gmail.com';
+    }
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+    function isValidSlug(slug) {
+      return slug is string && slug.size() >= 2 && slug.size() <= 64 && slug.matches('^[a-z0-9]+(?:-[a-z0-9]+)*$');
+    }
+    function isValidEmailId(id) {
+      return id is string && id.size() >= 3 && id.size() <= 160 && id.matches('^[a-zA-Z0-9._%+\\-]+@[a-zA-Z0-9.\\-]+\\.[a-zA-Z]{2,}$');
+    }
+    function isSafeImageUri(val, maxLen) {
+      return val is string
+        && val.size() <= maxLen
+        && (
+          val == ''
+          || val.matches('^https://.*')
+          || val.matches('^http://.*')
+          || val.matches('^/assets/.*')
+          || val.matches('^data:image/(png|jpeg|jpg|webp|gif);base64,[A-Za-z0-9+/=]+$')
+        );
+    }
+
+    function libPath(slug) {
+      return /databases/$(database)/documents/libraries/$(slug);
+    }
+    function libExists(slug) {
+      return exists(libPath(slug));
+    }
+    function libData(slug) {
+      return get(libPath(slug)).data;
+    }
+    function isLibraryAdmin(slug) {
+      return isSignedIn() && libExists(slug) && libData(slug).adminEmail.lower() == userEmail();
+    }
+    function isHandedOver(slug) {
+      return libExists(slug) && libData(slug).handedOver == true;
+    }
+    function memberPath(slug, email) {
+      return /databases/$(database)/documents/libraries/$(slug)/members/$(email);
+    }
+    function isLibraryMember(slug) {
+      return isSignedIn() && exists(memberPath(slug, userEmail()));
+    }
+    function getMember(slug) {
+      return get(memberPath(slug, userEmail())).data;
+    }
+
+    // Validation Blueprints
+    function isValidLibrarySubscription(sub) {
+      return sub is map
+        && sub.keys().hasAll(['planId', 'planLabel', 'amountPaidInr', 'isLifetime', 'startedAt', 'expiresAt'])
+        && sub.keys().hasOnly(['planId', 'planLabel', 'amountPaidInr', 'isLifetime', 'startedAt', 'expiresAt', 'lastPaymentRef', 'renewalToken', 'updatedAt'])
+        && sub.planId in ['monthly', 'six_months', 'yearly', 'lifetime']
+        && sub.planLabel is string && sub.planLabel.size() >= 1 && sub.planLabel.size() <= 80
+        && sub.amountPaidInr is number && sub.amountPaidInr >= 0 && sub.amountPaidInr <= 10000000
+        && sub.isLifetime is bool
+        && sub.startedAt is string && sub.startedAt.size() <= 32
+        && sub.expiresAt is string && sub.expiresAt.size() <= 32
+        && (!('lastPaymentRef' in sub) || (sub.lastPaymentRef is string && sub.lastPaymentRef.size() <= 80))
+        && (!('renewalToken' in sub) || (sub.renewalToken is string && sub.renewalToken.size() <= 80))
+        && (!('updatedAt' in sub) || (sub.updatedAt is string && sub.updatedAt.size() <= 64));
+    }
+
+    function isValidLibrary(data, slug) {
+      return data.keys().hasAll([
+          'slug', 'name', 'adminEmail', 'status', 'handedOver',
+          'themeColor', 'heroTitle', 'createdAt', 'updatedAt'
+        ])
+        && data.keys().hasOnly([
+          'slug', 'name', 'adminEmail', 'status', 'handedOver',
+          'themeColor', 'logoUrl', 'heroBadge', 'heroTitle', 'heroSubtitle',
+          'heroCtaLabel', 'memberLoginLabel', 'pageTitles', 'aboutContent', 'customPages',
+          'timingsIntro', 'timings', 'feesIntro', 'fees',
+          'facilitiesIntro', 'facilities', 'gallery', 'contact',
+          'privacyPolicy', 'termsConditions', 'replyTemplates',
+          'reminderTemplates', 'reminderLanguage', 'memberVisibility', 'memberDraftFields',
+          'storageConfig', 'subscription', 'socialLinks', 'createdAt', 'updatedAt'
+        ])
+        && data.slug == slug
+        && isValidSlug(data.slug)
+        && data.name is string && data.name.size() >= 2 && data.name.size() <= 100
+        && data.adminEmail is string && isValidEmailId(data.adminEmail)
+        && data.status in ['active', 'suspended']
+        && data.handedOver is bool
+        && data.themeColor is string && data.themeColor.size() == 7 && data.themeColor.matches('^#[0-9a-fA-F]{6}$')
+        && data.heroTitle is string && data.heroTitle.size() >= 1 && data.heroTitle.size() <= 140
+        && (!('logoUrl' in data) || isSafeImageUri(data.logoUrl, 350000))
+        && (!('heroBadge' in data) || (data.heroBadge is string && data.heroBadge.size() <= 80))
+        && (!('heroSubtitle' in data) || (data.heroSubtitle is string && data.heroSubtitle.size() <= 500))
+        && (!('heroCtaLabel' in data) || (data.heroCtaLabel is string && data.heroCtaLabel.size() <= 60))
+        && (!('memberLoginLabel' in data) || (data.memberLoginLabel is string && data.memberLoginLabel.size() <= 60))
+        && (!('aboutContent' in data) || (data.aboutContent is string && data.aboutContent.size() <= 15000))
+        && (!('customPages' in data) || (data.customPages is list && data.customPages.size() <= 30))
+        && (!('timingsIntro' in data) || (data.timingsIntro is string && data.timingsIntro.size() <= 600))
+        && (!('timings' in data) || (data.timings is list && data.timings.size() <= 20))
+        && (!('feesIntro' in data) || (data.feesIntro is string && data.feesIntro.size() <= 600))
+        && (!('fees' in data) || (data.fees is list && data.fees.size() <= 20))
+        && (!('facilitiesIntro' in data) || (data.facilitiesIntro is string && data.facilitiesIntro.size() <= 600))
+        && (!('facilities' in data) || (data.facilities is list && data.facilities.size() <= 30))
+        && (!('gallery' in data) || (data.gallery is list && data.gallery.size() <= 20))
+        && (!('privacyPolicy' in data) || (data.privacyPolicy is string && data.privacyPolicy.size() <= 15000))
+        && (!('termsConditions' in data) || (data.termsConditions is string && data.termsConditions.size() <= 15000))
+        && (!('replyTemplates' in data) || (data.replyTemplates is list && data.replyTemplates.size() <= 30))
+        && (!('memberDraftFields' in data) || (data.memberDraftFields is list && data.memberDraftFields.size() <= 25))
+        && (!('pageTitles' in data) || data.pageTitles is map)
+        && (!('contact' in data) || data.contact is map)
+        && (!('reminderTemplates' in data) || data.reminderTemplates is map)
+        && (!('reminderLanguage' in data) || data.reminderLanguage in ['en', 'hi'])
+        && (!('memberVisibility' in data) || data.memberVisibility is map)
+        && (!('storageConfig' in data) || data.storageConfig is map)
+        && (!('subscription' in data) || isValidLibrarySubscription(data.subscription))
+        && (!('socialLinks' in data) || (data.socialLinks is list && data.socialLinks.size() <= 15 && (data.socialLinks.size() == 0 || data.socialLinks[0] is map)))
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidBilling(data, slug) {
+      return data.keys().hasAll(['slug', 'libraryName', 'adminEmail', 'setupAmountInr', 'paid', 'updatedAt'])
+        && data.keys().hasOnly(['slug', 'libraryName', 'adminEmail', 'setupAmountInr', 'paid', 'datePaid', 'notes', 'updatedAt'])
+        && data.slug == slug && isValidSlug(data.slug)
+        && data.libraryName is string && data.libraryName.size() >= 1 && data.libraryName.size() <= 100
+        && data.adminEmail is string && isValidEmailId(data.adminEmail)
+        && data.setupAmountInr is number && data.setupAmountInr >= 0 && data.setupAmountInr <= 10000000
+        && data.paid is bool
+        && (!('datePaid' in data) || (data.datePaid is string && data.datePaid.size() <= 32))
+        && (!('notes' in data) || (data.notes is string && data.notes.size() <= 1000))
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidMedia(data, mediaId) {
+      return data.keys().hasAll(['id', 'name', 'mimeType', 'dataUrl', 'kind', 'createdAt'])
+        && data.keys().hasOnly(['id', 'name', 'mimeType', 'dataUrl', 'kind', 'createdAt'])
+        && data.id == mediaId && isValidId(data.id)
+        && data.name is string && data.name.size() >= 1 && data.name.size() <= 160
+        && data.mimeType is string && data.mimeType.size() >= 3 && data.mimeType.size() <= 64
+        && data.dataUrl is string && data.dataUrl.size() >= 10 && isSafeImageUri(data.dataUrl, 920000)
+        && data.kind in ['logo', 'gallery']
+        && data.createdAt is timestamp;
+    }
+
+    function isValidMember(data, memberEmail) {
+      return data.keys().hasAll([
+          'email', 'name', 'seatNumber', 'phone', 'dateJoined', 'joinedAt',
+          'monthStart', 'monthEnd', 'feeAmountInr', 'feeStatus', 'termsAccepted',
+          'createdAt', 'updatedAt'
+        ])
+        && data.keys().hasOnly([
+          'email', 'name', 'seatNumber', 'phone', 'timingShift', 'customFields',
+          'dateJoined', 'joinedAt', 'monthStart', 'monthEnd', 'feeAmountInr',
+          'feeStatus', 'lastPaidAt', 'termsAccepted', 'termsAcceptedAt', 'uid',
+          'createdAt', 'updatedAt'
+        ])
+        && data.email == memberEmail && isValidEmailId(data.email)
+        && data.name is string && data.name.size() >= 1 && data.name.size() <= 120
+        && data.seatNumber is string && data.seatNumber.size() >= 1 && data.seatNumber.size() <= 32
+        && data.phone is string && data.phone.size() <= 32
+        && (!('timingShift' in data) || (data.timingShift is string && data.timingShift.size() <= 80))
+        && (!('customFields' in data) || (data.customFields is map && data.customFields.keys().size() <= 25))
+        && data.dateJoined is string && data.dateJoined.size() >= 8 && data.dateJoined.size() <= 32
+        && data.joinedAt is timestamp
+        && data.monthStart is string && data.monthStart.size() >= 8 && data.monthStart.size() <= 32
+        && data.monthEnd is string && data.monthEnd.size() >= 8 && data.monthEnd.size() <= 32
+        && data.feeAmountInr is number && data.feeAmountInr >= 0 && data.feeAmountInr <= 1000000
+        && data.feeStatus in ['paid', 'pending']
+        && (!('lastPaidAt' in data) || (data.lastPaidAt is string && data.lastPaidAt.size() <= 64))
+        && data.termsAccepted is bool
+        && (!('termsAcceptedAt' in data) || (data.termsAcceptedAt is string && data.termsAcceptedAt.size() <= 64))
+        && (!('uid' in data) || (data.uid is string && data.uid.size() <= 128))
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidAnnouncement(data, announcementId) {
+      return data.keys().hasAll(['id', 'title', 'body', 'category', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly(['id', 'title', 'body', 'category', 'createdAt', 'updatedAt'])
+        && data.id == announcementId && isValidId(data.id)
+        && data.title is string && data.title.size() >= 1 && data.title.size() <= 140
+        && data.body is string && data.body.size() >= 1 && data.body.size() <= 2000
+        && data.category in ['notice', 'holiday', 'update']
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidReview(data, reviewId) {
+      return data.keys().hasAll(['id', 'memberEmail', 'authorName', 'rating', 'comment', 'isHidden', 'isCurated', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly(['id', 'memberEmail', 'authorName', 'rating', 'comment', 'isHidden', 'isCurated', 'createdAt', 'updatedAt'])
+        && data.id == reviewId && isValidId(data.id)
+        && data.memberEmail is string && data.memberEmail.size() >= 3 && data.memberEmail.size() <= 160
+        && data.authorName is string && data.authorName.size() >= 1 && data.authorName.size() <= 120
+        && data.rating is number && data.rating >= 1 && data.rating <= 5
+        && data.comment is string && data.comment.size() >= 2 && data.comment.size() <= 1500
+        && data.isHidden is bool
+        && data.isCurated is bool
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidComplaint(data, complaintId) {
+      return data.keys().hasAll(['id', 'memberEmail', 'memberName', 'seatNumber', 'subject', 'message', 'status', 'replyText', 'emailDispatched', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly(['id', 'complaintNumber', 'memberEmail', 'memberName', 'seatNumber', 'subject', 'message', 'status', 'replyText', 'repliedAt', 'emailDispatched', 'createdAt', 'updatedAt'])
+        && data.id == complaintId && isValidId(data.id)
+        && (!('complaintNumber' in data) || (data.complaintNumber is string && data.complaintNumber.size() >= 4 && data.complaintNumber.size() <= 32))
+        && isValidEmailId(data.memberEmail)
+        && data.memberName is string && data.memberName.size() >= 1 && data.memberName.size() <= 120
+        && data.seatNumber is string && data.seatNumber.size() >= 1 && data.seatNumber.size() <= 32
+        && data.subject is string && data.subject.size() >= 1 && data.subject.size() <= 140
+        && data.message is string && data.message.size() >= 1 && data.message.size() <= 2000
+        && data.status in ['new', 'in_review', 'replied', 'closed']
+        && data.replyText is string && data.replyText.size() <= 2000
+        && (!('repliedAt' in data) || (data.repliedAt is string && data.repliedAt.size() <= 64))
+        && data.emailDispatched is bool
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidOutbox(data, outboxId) {
+      return data.keys().hasAll(['id', 'memberEmail', 'memberName', 'seatNumber', 'phone', 'monthEnd', 'amountInr', 'language', 'message', 'dateKey', 'status', 'createdAt'])
+        && data.keys().hasOnly(['id', 'memberEmail', 'memberName', 'seatNumber', 'phone', 'monthEnd', 'amountInr', 'language', 'message', 'dateKey', 'status', 'createdAt'])
+        && data.id == outboxId && data.id.size() >= 5 && data.id.size() <= 200
+        && isValidEmailId(data.memberEmail)
+        && data.memberName is string && data.memberName.size() >= 1 && data.memberName.size() <= 120
+        && data.seatNumber is string && data.seatNumber.size() >= 1 && data.seatNumber.size() <= 32
+        && data.phone is string && data.phone.size() <= 32
+        && data.monthEnd is string && data.monthEnd.size() >= 8 && data.monthEnd.size() <= 32
+        && data.amountInr is number && data.amountInr >= 0 && data.amountInr <= 1000000
+        && data.language in ['en', 'hi']
+        && data.message is string && data.message.size() >= 1 && data.message.size() <= 1500
+        && data.dateKey is string && data.dateKey.size() == 10
+        && data.status in ['due', 'sent_whatsapp']
+        && data.createdAt is timestamp;
+    }
+
+    function isValidPrivateStorage(data, docId) {
+      return docId == 'storage'
+        && data.keys().hasAll(['consentAccepted', 'updatedAt'])
+        && data.keys().hasOnly([
+          'firebaseConfigJson', 'firebaseProjectId', 'firebaseBucket',
+          'connectedGmail', 'consentAccepted', 'consentAcceptedAt', 'updatedAt'
+        ])
+        && data.consentAccepted is bool
+        && (!('firebaseConfigJson' in data) || (data.firebaseConfigJson is string && data.firebaseConfigJson.size() <= 3000))
+        && (!('firebaseProjectId' in data) || (data.firebaseProjectId is string && data.firebaseProjectId.size() <= 128))
+        && (!('firebaseBucket' in data) || (data.firebaseBucket is string && data.firebaseBucket.size() <= 200))
+        && (!('connectedGmail' in data) || (data.connectedGmail is string && data.connectedGmail.size() <= 160))
+        && (!('consentAcceptedAt' in data) || (data.consentAcceptedAt is string && data.consentAcceptedAt.size() <= 64))
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidPaymentRequest(data, requestId) {
+      return data.keys().hasAll([
+          'id', 'orderRef', 'librarySlug', 'libraryName', 'adminEmail',
+          'planId', 'planLabel', 'amountInr', 'utrNumber', 'upiIdUsed',
+          'refundPolicyAccepted', 'status', 'createdAt', 'updatedAt'
+        ])
+        && data.keys().hasOnly([
+          'id', 'orderRef', 'librarySlug', 'libraryName', 'adminEmail',
+          'planId', 'planLabel', 'amountInr', 'utrNumber', 'upiIdUsed',
+          'screenshotDataUrl', 'refundPolicyAccepted', 'status',
+          'reviewerNote', 'reviewedAt', 'createdAt', 'updatedAt'
+        ])
+        && data.id == requestId && isValidId(data.id)
+        && data.orderRef is string && data.orderRef.size() >= 4 && data.orderRef.size() <= 64
+        && isValidSlug(data.librarySlug)
+        && data.libraryName is string && data.libraryName.size() >= 1 && data.libraryName.size() <= 100
+        && isValidEmailId(data.adminEmail)
+        && data.planId in ['monthly', 'six_months', 'yearly', 'lifetime']
+        && data.planLabel is string && data.planLabel.size() >= 1 && data.planLabel.size() <= 80
+        && data.amountInr is number && data.amountInr >= 1 && data.amountInr <= 1000000
+        && data.utrNumber is string && data.utrNumber.size() >= 8 && data.utrNumber.size() <= 40
+        && data.upiIdUsed is string && data.upiIdUsed.size() >= 3 && data.upiIdUsed.size() <= 128
+        && (!('screenshotDataUrl' in data) || (data.screenshotDataUrl is string && data.screenshotDataUrl.size() <= 650000))
+        && data.refundPolicyAccepted is bool
+        && data.status in ['pending', 'approved', 'rejected']
+        && (!('reviewerNote' in data) || (data.reviewerNote is string && data.reviewerNote.size() <= 500))
+        && (!('reviewedAt' in data) || (data.reviewedAt is string && data.reviewedAt.size() <= 64))
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidSubscriptionEmailLog(data, logId) {
+      return data.keys().hasAll([
+          'id', 'librarySlug', 'libraryName', 'adminEmail',
+          'planId', 'planLabel', 'expiresAt', 'stage',
+          'status', 'subject', 'renewalUrl', 'sentAt', 'createdAt'
+        ])
+        && data.keys().hasOnly([
+          'id', 'librarySlug', 'libraryName', 'adminEmail',
+          'planId', 'planLabel', 'expiresAt', 'stage',
+          'status', 'subject', 'renewalUrl', 'sentAt', 'createdAt'
+        ])
+        && data.id == logId && isValidId(data.id)
+        && isValidSlug(data.librarySlug)
+        && data.libraryName is string && data.libraryName.size() >= 1 && data.libraryName.size() <= 100
+        && isValidEmailId(data.adminEmail)
+        && data.planId in ['monthly', 'six_months', 'yearly', 'lifetime']
+        && data.planLabel is string && data.planLabel.size() >= 1 && data.planLabel.size() <= 80
+        && data.expiresAt is string && data.expiresAt.size() <= 32
+        && data.stage in ['before_2', 'before_1', 'day_0', 'after_1', 'after_2']
+        && data.status in ['sent', 'mailto_fallback', 'skipped']
+        && data.subject is string && data.subject.size() >= 1 && data.subject.size() <= 240
+        && data.renewalUrl is string && data.renewalUrl.size() >= 1 && data.renewalUrl.size() <= 400
+        && data.sentAt is string && data.sentAt.size() <= 64
+        && data.createdAt is timestamp;
+    }
+
+    // Platform Branding (Public get, Super Admin write ONLY)
+    match /platform_config/{docId} {
+      allow get: if docId == 'branding';
+      allow create, update: if docId == 'branding'
+        && isSuperAdmin()
+        && incoming().keys().hasAll(['brandName', 'logoUrl', 'updatedAt'])
+        && incoming().keys().hasOnly([
+          'brandName', 'tagline', 'logoUrl', 'heroUrl', 'domain', 'themeColor',
+          'whatsappNumber', 'upiId', 'upiPayeeName', 'upiQrUrl', 'pricing', 'refundPolicyText', 'socialLinks', 'updatedAt'
+        ])
+        && incoming().brandName is string && incoming().brandName.size() >= 1 && incoming().brandName.size() <= 80
+        && isSafeImageUri(incoming().logoUrl, 920000)
+        && (!('tagline' in incoming()) || (incoming().tagline is string && incoming().tagline.size() <= 200))
+        && (!('heroUrl' in incoming()) || isSafeImageUri(incoming().heroUrl, 920000))
+        && (!('domain' in incoming()) || (incoming().domain is string && incoming().domain.size() <= 100))
+        && (!('themeColor' in incoming()) || (incoming().themeColor is string && incoming().themeColor.size() == 7 && incoming().themeColor.matches('^#[0-9a-fA-F]{6}$')))
+        && (!('whatsappNumber' in incoming()) || (incoming().whatsappNumber is string && incoming().whatsappNumber.size() <= 32))
+        && (!('upiId' in incoming()) || (incoming().upiId is string && incoming().upiId.size() <= 128))
+        && (!('upiPayeeName' in incoming()) || (incoming().upiPayeeName is string && incoming().upiPayeeName.size() <= 120))
+        && (!('upiQrUrl' in incoming()) || isSafeImageUri(incoming().upiQrUrl, 920000))
+        && (!('pricing' in incoming()) || (
+          incoming().pricing is map
+          && incoming().pricing.keys().hasAll(['monthlyPriceInr', 'sixMonthPriceInr', 'yearlyPriceInr', 'lifetimePriceInr'])
+          && incoming().pricing.keys().hasOnly(['monthlyPriceInr', 'sixMonthPriceInr', 'yearlyPriceInr', 'lifetimePriceInr'])
+          && incoming().pricing.monthlyPriceInr is number && incoming().pricing.monthlyPriceInr >= 1 && incoming().pricing.monthlyPriceInr <= 1000000
+          && incoming().pricing.sixMonthPriceInr is number && incoming().pricing.sixMonthPriceInr >= 1 && incoming().pricing.sixMonthPriceInr <= 1000000
+          && incoming().pricing.yearlyPriceInr is number && incoming().pricing.yearlyPriceInr >= 1 && incoming().pricing.yearlyPriceInr <= 1000000
+          && incoming().pricing.lifetimePriceInr is number && incoming().pricing.lifetimePriceInr >= 1 && incoming().pricing.lifetimePriceInr <= 1000000
+        ))
+        && (!('refundPolicyText' in incoming()) || (incoming().refundPolicyText is string && incoming().refundPolicyText.size() <= 15000))
+        && (!('socialLinks' in incoming()) || (incoming().socialLinks is list && incoming().socialLinks.size() <= 15 && (incoming().socialLinks.size() == 0 || incoming().socialLinks[0] is map)))
+        && incoming().updatedAt == request.time;
+    }
+
+    // Automated 5-Day Subscription Expiry Email Logs (Super Admin ONLY)
+    match /subscription_email_logs/{logId} {
+      allow get, list: if isSuperAdmin();
+      allow create, update: if isSuperAdmin()
+        && isValidId(logId)
+        && isValidSubscriptionEmailLog(incoming(), logId)
+        && incoming().createdAt == request.time;
+      allow delete: if isSuperAdmin() && isValidId(logId);
+    }
+
+    // Platform Billing (Super Admin ONLY)
+    match /platform_billing/{slug} {
+      allow get, list: if isSuperAdmin();
+      allow create: if isSuperAdmin() && isValidSlug(slug) && isValidBilling(incoming(), slug) && incoming().updatedAt == request.time;
+      allow update: if isSuperAdmin() && isValidSlug(slug) && isValidBilling(incoming(), slug) && incoming().slug == existing().slug && incoming().updatedAt == request.time;
+      allow delete: if isSuperAdmin() && isValidSlug(slug);
+    }
+
+    // Direct UPI Payment Requests (Admin creates pending request; only Super Admin approves/rejects)
+    match /payment_requests/{requestId} {
+      allow get: if isValidId(requestId) && (
+        isSuperAdmin() || (isSignedIn() && resource.data.adminEmail == userEmail())
+      );
+      allow list: if isSuperAdmin() || (isSignedIn() && resource.data.adminEmail == userEmail());
+      allow create: if isValidId(requestId)
+        && isValidPaymentRequest(incoming(), requestId)
+        && isLibraryAdmin(incoming().librarySlug)
+        && incoming().adminEmail == userEmail()
+        && incoming().status == 'pending'
+        && incoming().refundPolicyAccepted == true
+        && (!('reviewerNote' in incoming()) || incoming().reviewerNote == '')
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time;
+      allow update: if isSuperAdmin()
+        && isValidId(requestId)
+        && isValidPaymentRequest(incoming(), requestId)
+        && incoming().id == existing().id
+        && incoming().orderRef == existing().orderRef
+        && incoming().librarySlug == existing().librarySlug
+        && incoming().adminEmail == existing().adminEmail
+        && incoming().amountInr == existing().amountInr
+        && incoming().utrNumber == existing().utrNumber
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time;
+      allow delete: if isSuperAdmin() && isValidId(requestId);
+    }
+
+    // Library sites (strictly no public list so visitors cannot discover other libraries)
+    match /libraries/{slug} {
+      allow get: if isValidSlug(slug);
+      allow list: if isSuperAdmin();
+      allow create: if isSuperAdmin() && isValidSlug(slug) && isValidLibrary(incoming(), slug)
+        && incoming().createdAt == request.time && incoming().updatedAt == request.time;
+      allow update: if isValidSlug(slug) && isValidLibrary(incoming(), slug)
+        && incoming().slug == existing().slug
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && (
+          (isSuperAdmin() && (
+            !existing().handedOver
+            || incoming().diff(existing()).affectedKeys().hasOnly(['status', 'adminEmail', 'handedOver', 'subscription', 'updatedAt'])
+          ))
+          || (isLibraryAdmin(slug) && existing().status == 'active'
+            && incoming().status == existing().status
+            && incoming().adminEmail == existing().adminEmail
+            && incoming().handedOver == existing().handedOver
+            && (
+              (!('subscription' in incoming()) && !('subscription' in existing()))
+              || ('subscription' in incoming() && 'subscription' in existing() && incoming().subscription == existing().subscription)
+            ))
+        );
+      allow delete: if isSuperAdmin() && isValidSlug(slug);
+
+      // Media assets (logo & gallery)
+      match /media/{mediaId} {
+        allow get, list: if isValidSlug(slug);
+        allow create: if isValidSlug(slug) && isValidId(mediaId) && isValidMedia(incoming(), mediaId)
+          && incoming().createdAt == request.time
+          && (isLibraryAdmin(slug) || (isSuperAdmin() && !isHandedOver(slug)));
+        allow update: if isValidSlug(slug) && isValidId(mediaId) && isValidMedia(incoming(), mediaId)
+          && incoming().createdAt == existing().createdAt
+          && (isLibraryAdmin(slug) || (isSuperAdmin() && !isHandedOver(slug)));
+        allow delete: if isValidSlug(slug) && isValidId(mediaId)
+          && (isLibraryAdmin(slug) || (isSuperAdmin() && !isHandedOver(slug)));
+      }
+
+      // Members (strictly isolated: Super Admin CANNOT read or list)
+      match /members/{memberEmail} {
+        allow get: if isValidSlug(slug) && isValidEmailId(memberEmail) && (
+          isLibraryAdmin(slug) || (isSignedIn() && userEmail() == memberEmail)
+        );
+        allow list: if isValidSlug(slug) && isLibraryAdmin(slug);
+        allow create: if isValidSlug(slug) && isValidEmailId(memberEmail)
+          && isLibraryAdmin(slug)
+          && isValidMember(incoming(), memberEmail)
+          && incoming().createdAt == request.time && incoming().updatedAt == request.time;
+        allow update: if isValidSlug(slug) && isValidEmailId(memberEmail)
+          && isValidMember(incoming(), memberEmail)
+          && incoming().email == existing().email
+          && incoming().createdAt == existing().createdAt
+          && incoming().updatedAt == request.time
+          && (
+            isLibraryAdmin(slug)
+            || (isSignedIn() && userEmail() == memberEmail
+                && incoming().diff(existing()).affectedKeys().hasOnly(['termsAccepted', 'termsAcceptedAt', 'uid', 'updatedAt'])
+                && (!('uid' in incoming()) || incoming().uid == request.auth.uid))
+          );
+        allow delete: if isValidSlug(slug) && isValidEmailId(memberEmail) && isLibraryAdmin(slug);
+      }
+
+      // Announcements
+      match /announcements/{announcementId} {
+        allow get, list: if isValidSlug(slug);
+        allow create: if isValidSlug(slug) && isValidId(announcementId) && isValidAnnouncement(incoming(), announcementId)
+          && incoming().createdAt == request.time && incoming().updatedAt == request.time
+          && (isLibraryAdmin(slug) || (isSuperAdmin() && !isHandedOver(slug)));
+        allow update: if isValidSlug(slug) && isValidId(announcementId) && isValidAnnouncement(incoming(), announcementId)
+          && incoming().createdAt == existing().createdAt && incoming().updatedAt == request.time
+          && (isLibraryAdmin(slug) || (isSuperAdmin() && !isHandedOver(slug)));
+        allow delete: if isValidSlug(slug) && isValidId(announcementId)
+          && (isLibraryAdmin(slug) || (isSuperAdmin() && !isHandedOver(slug)));
+      }
+
+      // Reviews (1-month server-side enforcement on member reviews)
+      match /reviews/{reviewId} {
+        allow get: if isValidSlug(slug) && isValidId(reviewId) && (resource.data.isHidden == false || isLibraryAdmin(slug));
+        allow list: if isValidSlug(slug) && (resource.data.isHidden == false || isLibraryAdmin(slug));
+        allow create: if isValidSlug(slug) && isValidId(reviewId) && isValidReview(incoming(), reviewId)
+          && incoming().createdAt == request.time && incoming().updatedAt == request.time
+          && (
+            (isLibraryAdmin(slug) && incoming().isCurated == true && incoming().memberEmail == 'curated')
+            || (isLibraryMember(slug)
+                && incoming().isCurated == false
+                && incoming().isHidden == false
+                && incoming().memberEmail == 'verified-member'
+                && request.time >= getMember(slug).joinedAt + duration.value(30, 'd'))
+          );
+        allow update: if isValidSlug(slug) && isValidId(reviewId) && isValidReview(incoming(), reviewId)
+          && incoming().createdAt == existing().createdAt && incoming().updatedAt == request.time
+          && isLibraryAdmin(slug);
+        allow delete: if isValidSlug(slug) && isValidId(reviewId) && isLibraryAdmin(slug);
+      }
+
+      // Complaints (strictly private to member and library admin; Super Admin CANNOT read)
+      match /complaints/{complaintId} {
+        allow get: if isValidSlug(slug) && isValidId(complaintId) && (
+          isLibraryAdmin(slug) || (isLibraryMember(slug) && resource.data.memberEmail == userEmail())
+        );
+        allow list: if isValidSlug(slug) && (
+          isLibraryAdmin(slug) || (isLibraryMember(slug) && resource.data.memberEmail == userEmail())
+        );
+        allow create: if isValidSlug(slug) && isValidId(complaintId) && isValidComplaint(incoming(), complaintId)
+          && (isLibraryMember(slug) || isLibraryAdmin(slug))
+          && incoming().memberEmail == userEmail()
+          && incoming().status == 'new'
+          && incoming().replyText == ''
+          && incoming().emailDispatched == false
+          && incoming().createdAt == request.time && incoming().updatedAt == request.time;
+        allow update: if isValidSlug(slug) && isValidId(complaintId) && isValidComplaint(incoming(), complaintId)
+          && isLibraryAdmin(slug)
+          && incoming().memberEmail == existing().memberEmail
+          && incoming().createdAt == existing().createdAt
+          && incoming().updatedAt == request.time;
+        allow delete: if isValidSlug(slug) && isValidId(complaintId) && isLibraryAdmin(slug);
+      }
+
+      // Daily reminder outbox (library admin & owning member)
+      match /reminder_outbox/{outboxId} {
+        allow get: if isValidSlug(slug) && (
+          isLibraryAdmin(slug) || (isLibraryMember(slug) && resource.data.memberEmail == userEmail())
+        );
+        allow list: if isValidSlug(slug) && (
+          isLibraryAdmin(slug) || (isLibraryMember(slug) && resource.data.memberEmail == userEmail())
+        );
+        allow create: if isValidSlug(slug) && isLibraryAdmin(slug) && isValidOutbox(incoming(), outboxId)
+          && incoming().createdAt == request.time;
+        allow update: if isValidSlug(slug) && isLibraryAdmin(slug) && isValidOutbox(incoming(), outboxId)
+          && incoming().createdAt == existing().createdAt;
+        allow delete: if isValidSlug(slug) && isLibraryAdmin(slug);
+      }
+
+      // Admin private BYO storage credentials
+      match /private/{docId} {
+        allow get, list: if isValidSlug(slug) && isLibraryAdmin(slug);
+        allow create, update: if isValidSlug(slug) && isLibraryAdmin(slug)
+          && isValidPrivateStorage(incoming(), docId)
+          && incoming().updatedAt == request.time;
+        allow delete: if isValidSlug(slug) && isLibraryAdmin(slug);
+      }
+    }
+  }
+}

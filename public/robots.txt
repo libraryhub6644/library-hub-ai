@@ -1,0 +1,6 @@
+User-agent: *
+Allow: /
+Disallow: /superadmin
+Disallow: /*/admin
+
+Sitemap: https://libraryhub.dpdns.org/sitemap.xml

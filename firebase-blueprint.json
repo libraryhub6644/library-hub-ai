@@ -1,0 +1,352 @@
+{
+  "entities": {
+    "Library": {
+      "title": "Library",
+      "description": "Independent study library site configuration, theme, public content, registration draft fields, and visibility settings.",
+      "type": "object",
+      "properties": {
+        "slug": { "type": "string", "minLength": 2, "maxLength": 64, "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$" },
+        "name": { "type": "string", "minLength": 2, "maxLength": 100 },
+        "adminEmail": { "type": "string", "format": "email", "maxLength": 160 },
+        "status": { "type": "string", "enum": ["active", "suspended"] },
+        "handedOver": { "type": "boolean" },
+        "themeColor": { "type": "string", "maxLength": 16, "pattern": "^#[0-9a-fA-F]{6}$" },
+        "logoUrl": { "type": "string", "maxLength": 350000 },
+        "heroBadge": { "type": "string", "maxLength": 80 },
+        "heroTitle": { "type": "string", "maxLength": 140 },
+        "heroSubtitle": { "type": "string", "maxLength": 500 },
+        "heroCtaLabel": { "type": "string", "maxLength": 60 },
+        "memberLoginLabel": { "type": "string", "maxLength": 60 },
+        "pageTitles": { "type": "object" },
+        "aboutContent": { "type": "string", "maxLength": 15000 },
+        "customPages": { "type": "array" },
+        "timingsIntro": { "type": "string", "maxLength": 600 },
+        "timings": { "type": "array" },
+        "feesIntro": { "type": "string", "maxLength": 600 },
+        "fees": { "type": "array" },
+        "facilitiesIntro": { "type": "string", "maxLength": 600 },
+        "facilities": { "type": "array" },
+        "gallery": { "type": "array" },
+        "contact": { "type": "object" },
+        "privacyPolicy": { "type": "string", "maxLength": 15000 },
+        "termsConditions": { "type": "string", "maxLength": 15000 },
+        "replyTemplates": { "type": "array" },
+        "reminderTemplates": { "type": "object" },
+        "reminderLanguage": { "type": "string", "enum": ["en", "hi"] },
+        "memberVisibility": { "type": "object" },
+        "memberDraftFields": { "type": "array" },
+        "storageConfig": { "type": "object" },
+        "subscription": { "type": "object" },
+        "socialLinks": { "type": "array" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": [
+        "slug",
+        "name",
+        "adminEmail",
+        "status",
+        "handedOver",
+        "themeColor",
+        "heroTitle",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "PlatformBilling": {
+      "title": "PlatformBilling",
+      "description": "Super Admin setup fee tracking per library site.",
+      "type": "object",
+      "properties": {
+        "slug": { "type": "string", "maxLength": 64 },
+        "libraryName": { "type": "string", "maxLength": 100 },
+        "adminEmail": { "type": "string", "maxLength": 160 },
+        "setupAmountInr": { "type": "number" },
+        "paid": { "type": "boolean" },
+        "datePaid": { "type": "string", "maxLength": 32 },
+        "notes": { "type": "string", "maxLength": 1000 },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["slug", "libraryName", "adminEmail", "setupAmountInr", "paid", "updatedAt"]
+    },
+    "MediaAsset": {
+      "title": "MediaAsset",
+      "description": "Permanent uploaded image asset (logo or gallery photo) scoped to a single library.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "name": { "type": "string", "maxLength": 160 },
+        "mimeType": { "type": "string", "maxLength": 64 },
+        "dataUrl": { "type": "string", "maxLength": 920000 },
+        "kind": { "type": "string", "enum": ["logo", "gallery"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "name", "mimeType", "dataUrl", "kind", "createdAt"]
+    },
+    "Member": {
+      "title": "Member",
+      "description": "Private student member profile, seat assignment, custom draft fields, and monthly fee cycle for a single library.",
+      "type": "object",
+      "properties": {
+        "email": { "type": "string", "format": "email", "maxLength": 160 },
+        "name": { "type": "string", "minLength": 1, "maxLength": 120 },
+        "seatNumber": { "type": "string", "minLength": 1, "maxLength": 32 },
+        "phone": { "type": "string", "maxLength": 32 },
+        "timingShift": { "type": "string", "maxLength": 80 },
+        "customFields": { "type": "object" },
+        "dateJoined": { "type": "string", "maxLength": 32 },
+        "joinedAt": { "type": "string", "format": "date-time" },
+        "monthStart": { "type": "string", "maxLength": 32 },
+        "monthEnd": { "type": "string", "maxLength": 32 },
+        "feeAmountInr": { "type": "number" },
+        "feeStatus": { "type": "string", "enum": ["paid", "pending"] },
+        "lastPaidAt": { "type": "string", "maxLength": 64 },
+        "termsAccepted": { "type": "boolean" },
+        "termsAcceptedAt": { "type": "string", "maxLength": 64 },
+        "uid": { "type": "string", "maxLength": 128 },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": [
+        "email",
+        "name",
+        "seatNumber",
+        "phone",
+        "dateJoined",
+        "joinedAt",
+        "monthStart",
+        "monthEnd",
+        "feeAmountInr",
+        "feeStatus",
+        "termsAccepted",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "Announcement": {
+      "title": "Announcement",
+      "description": "Library notice, holiday update, or schedule announcement.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "title": { "type": "string", "minLength": 1, "maxLength": 140 },
+        "body": { "type": "string", "minLength": 1, "maxLength": 2000 },
+        "category": { "type": "string", "enum": ["notice", "holiday", "update"] },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "title", "body", "category", "createdAt", "updatedAt"]
+    },
+    "Review": {
+      "title": "Review",
+      "description": "Member or admin-curated review for a library. Members require >= 30 days since joinedAt.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "memberEmail": {
+          "type": "string",
+          "enum": ["verified-member", "curated"],
+          "maxLength": 160,
+          "description": "Anonymized attribution marker ('verified-member' or 'curated'); never stores personal user email addresses."
+        },
+        "authorName": { "type": "string", "minLength": 1, "maxLength": 120 },
+        "rating": { "type": "number" },
+        "comment": { "type": "string", "minLength": 2, "maxLength": 1500 },
+        "isHidden": { "type": "boolean" },
+        "isCurated": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "memberEmail", "authorName", "rating", "comment", "isHidden", "isCurated", "createdAt", "updatedAt"]
+    },
+    "Complaint": {
+      "title": "Complaint",
+      "description": "Private member complaint or help request with unique tracking number.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "complaintNumber": { "type": "string", "maxLength": 32 },
+        "memberEmail": { "type": "string", "maxLength": 160 },
+        "memberName": { "type": "string", "maxLength": 120 },
+        "seatNumber": { "type": "string", "maxLength": 32 },
+        "subject": { "type": "string", "minLength": 1, "maxLength": 140 },
+        "message": { "type": "string", "minLength": 1, "maxLength": 2000 },
+        "status": { "type": "string", "enum": ["new", "in_review", "replied", "closed"] },
+        "replyText": { "type": "string", "maxLength": 2000 },
+        "repliedAt": { "type": "string", "maxLength": 64 },
+        "emailDispatched": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "memberEmail", "memberName", "seatNumber", "subject", "message", "status", "replyText", "emailDispatched", "createdAt", "updatedAt"]
+    },
+    "ReminderOutbox": {
+      "title": "ReminderOutbox",
+      "description": "Daily automatic fee reminder outbox log entry for a member.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 200 },
+        "memberEmail": { "type": "string", "maxLength": 160 },
+        "memberName": { "type": "string", "maxLength": 120 },
+        "seatNumber": { "type": "string", "maxLength": 32 },
+        "phone": { "type": "string", "maxLength": 32 },
+        "monthEnd": { "type": "string", "maxLength": 32 },
+        "amountInr": { "type": "number" },
+        "language": { "type": "string", "enum": ["en", "hi"] },
+        "message": { "type": "string", "maxLength": 1500 },
+        "dateKey": { "type": "string", "maxLength": 16 },
+        "status": { "type": "string", "enum": ["due", "sent_whatsapp"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "memberEmail", "memberName", "seatNumber", "phone", "monthEnd", "amountInr", "language", "message", "dateKey", "status", "createdAt"]
+    },
+    "PrivateStorage": {
+      "title": "PrivateStorage",
+      "description": "Admin-owned BYO Firebase Database and Storage configuration and consent.",
+      "type": "object",
+      "properties": {
+        "firebaseConfigJson": { "type": "string", "maxLength": 3000 },
+        "firebaseProjectId": { "type": "string", "maxLength": 128 },
+        "firebaseBucket": { "type": "string", "maxLength": 200 },
+        "connectedGmail": { "type": "string", "maxLength": 160 },
+        "consentAccepted": { "type": "boolean" },
+        "consentAcceptedAt": { "type": "string", "maxLength": 64 },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["consentAccepted", "updatedAt"]
+    },
+    "PlatformBranding": {
+      "title": "PlatformBranding",
+      "description": "Super Admin customizable Library Hub brand name, logo, domain, tagline, and hero image.",
+      "type": "object",
+      "properties": {
+        "brandName": { "type": "string", "minLength": 1, "maxLength": 80 },
+        "tagline": { "type": "string", "maxLength": 200 },
+        "logoUrl": { "type": "string", "maxLength": 920000 },
+        "heroUrl": { "type": "string", "maxLength": 920000 },
+        "domain": { "type": "string", "maxLength": 100 },
+        "themeColor": { "type": "string", "maxLength": 16, "pattern": "^#[0-9a-fA-F]{6}$" },
+        "whatsappNumber": { "type": "string", "maxLength": 32 },
+        "upiId": { "type": "string", "maxLength": 128 },
+        "upiPayeeName": { "type": "string", "maxLength": 120 },
+        "upiQrUrl": { "type": "string", "maxLength": 920000 },
+        "pricing": { "type": "object" },
+        "refundPolicyText": { "type": "string", "maxLength": 15000 },
+        "socialLinks": { "type": "array" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["brandName", "logoUrl", "updatedAt"]
+    },
+    "PaymentRequest": {
+      "title": "PaymentRequest",
+      "description": "Library owner direct UPI payment submission with UTR verification and Super Admin approval state.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "orderRef": { "type": "string", "maxLength": 64 },
+        "librarySlug": { "type": "string", "maxLength": 64 },
+        "libraryName": { "type": "string", "maxLength": 100 },
+        "adminEmail": { "type": "string", "format": "email", "maxLength": 160 },
+        "planId": { "type": "string", "enum": ["monthly", "six_months", "yearly", "lifetime"] },
+        "planLabel": { "type": "string", "maxLength": 80 },
+        "amountInr": { "type": "number" },
+        "utrNumber": { "type": "string", "maxLength": 40 },
+        "upiIdUsed": { "type": "string", "maxLength": 128 },
+        "screenshotDataUrl": { "type": "string", "maxLength": 650000 },
+        "refundPolicyAccepted": { "type": "boolean" },
+        "status": { "type": "string", "enum": ["pending", "approved", "rejected"] },
+        "reviewerNote": { "type": "string", "maxLength": 500 },
+        "reviewedAt": { "type": "string", "maxLength": 64 },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": [
+        "id",
+        "orderRef",
+        "librarySlug",
+        "libraryName",
+        "adminEmail",
+        "planId",
+        "planLabel",
+        "amountInr",
+        "utrNumber",
+        "upiIdUsed",
+        "refundPolicyAccepted",
+        "status",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "SubscriptionEmailLog": {
+      "title": "SubscriptionEmailLog",
+      "description": "Tracks automated 5-day expiry email reminders sent to library admins.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 160 },
+        "librarySlug": { "type": "string", "maxLength": 64 },
+        "libraryName": { "type": "string", "maxLength": 100 },
+        "adminEmail": { "type": "string", "format": "email", "maxLength": 160 },
+        "planId": { "type": "string", "enum": ["monthly", "six_months", "yearly", "lifetime"] },
+        "planLabel": { "type": "string", "maxLength": 80 },
+        "expiresAt": { "type": "string", "maxLength": 32 },
+        "stage": { "type": "string", "enum": ["before_2", "before_1", "day_0", "after_1", "after_2"] },
+        "status": { "type": "string", "enum": ["sent", "mailto_fallback", "skipped"] },
+        "subject": { "type": "string", "maxLength": 240 },
+        "renewalUrl": { "type": "string", "maxLength": 400 },
+        "sentAt": { "type": "string", "maxLength": 64 },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "librarySlug", "libraryName", "adminEmail", "planId", "planLabel", "expiresAt", "stage", "status", "subject", "renewalUrl", "sentAt", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/platform_config/{docId}": {
+      "schema": { "$ref": "#/entities/PlatformBranding" },
+      "description": "Global Library Hub branding edited exclusively by Super Admin."
+    },
+    "/libraries/{slug}": {
+      "schema": { "$ref": "#/entities/Library" },
+      "description": "Public library configuration and editable site content; list restricted to Super Admin."
+    },
+    "/platform_billing/{slug}": {
+      "schema": { "$ref": "#/entities/PlatformBilling" },
+      "description": "Super Admin setup fee tracking per library."
+    },
+    "/libraries/{slug}/media/{mediaId}": {
+      "schema": { "$ref": "#/entities/MediaAsset" },
+      "description": "Library logo and gallery images."
+    },
+    "/libraries/{slug}/members/{memberEmail}": {
+      "schema": { "$ref": "#/entities/Member" },
+      "description": "Private library member records isolated to library admin and owning member."
+    },
+    "/libraries/{slug}/announcements/{announcementId}": {
+      "schema": { "$ref": "#/entities/Announcement" },
+      "description": "Announcements visible to visitors and members."
+    },
+    "/libraries/{slug}/reviews/{reviewId}": {
+      "schema": { "$ref": "#/entities/Review" },
+      "description": "Member reviews (>= 30 days membership) and admin curated reviews."
+    },
+    "/libraries/{slug}/complaints/{complaintId}": {
+      "schema": { "$ref": "#/entities/Complaint" },
+      "description": "Private member complaints and admin replies with tracking numbers."
+    },
+    "/libraries/{slug}/reminder_outbox/{outboxId}": {
+      "schema": { "$ref": "#/entities/ReminderOutbox" },
+      "description": "Daily fee reminder outbox entries."
+    },
+    "/libraries/{slug}/private/{docId}": {
+      "schema": { "$ref": "#/entities/PrivateStorage" },
+      "description": "Admin-only BYO storage settings."
+    },
+    "/payment_requests/{requestId}": {
+      "schema": { "$ref": "#/entities/PaymentRequest" },
+      "description": "UPI subscription payment requests submitted by library admins and reviewed by Super Admin."
+    },
+    "/subscription_email_logs/{logId}": {
+      "schema": { "$ref": "#/entities/SubscriptionEmailLog" },
+      "description": "Automated 5-day expiry email dispatch logs strictly restricted to Super Admin."
+    }
+  }
+}
